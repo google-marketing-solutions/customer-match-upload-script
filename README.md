@@ -1,11 +1,14 @@
 DISCLAIMER: This is not an officially supported Google product.
 
-# About
+# Customer upload tool
+
+## About
+
 This tool uploads Customer Match lists to Google Ads via API.
 
-# Usage
+## Usage
 
-## Set-up
+### Set-up
 
 First, you must obtain the appropriate credentials so that the script
 can connect to Google Ads API and upload the data. Follow the instructions 
@@ -32,7 +35,7 @@ token*, you must add them to the script config file. In order to do so, edit the
 file `googleads_config.yaml` and enter the appropriate values. You'll also need
 the Google Ads *Customer ID*, which you can find in Google Ads UI.
 
-## Running the script
+### Running the script
 
 Once the configuration file is ready, and you have the audience file in
 `audience.csv` you can execute the script to upload the data to Google Ads:

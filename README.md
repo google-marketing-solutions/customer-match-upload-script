@@ -8,6 +8,15 @@ This tool uploads Customer Match lists to Google Ads via API.
 
 ## Usage
 
+### Google Ads setup
+
+Before running the script, you should create a remarketing list in Google Ads.
+It is recommended to set the membership duration to the N+1, where N is the
+number of days between script runs. This way, the list will be maintained with
+only those users that are in the audience file. If a user is removed from the
+file, it won't be added in the next script run and it will be eventually
+deleted.
+
 ### Set-up
 
 First, you must obtain the appropriate credentials so that the script
@@ -45,11 +54,17 @@ python create_and_populate_list.py
 ```
 
 If your audience file doesn't contain a column for the audience name, you can
-specify a default audience to which all entries will be added:
+specify a default audience to which all entries will be added. Here,
+`YOUR_AUDIENCE_NAME` will typically be the name of the audience you manually
+created in Google Ads for the purposes of this script:
 
 ```
 python create_and_populate_list.py --audience_name YOUR_AUDIENCE_NAME
 ```
+
+If you don't specify any remarketing list, either in the audience file or by
+passing the `audience_name` parameter, the script will create a new audience
+list and will add all the users to that one.
 
 The script has more optional parameters that allow working with custom
 configuration and audience file paths. For more info on them, run:

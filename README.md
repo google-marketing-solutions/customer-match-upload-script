@@ -11,11 +11,12 @@ This tool uploads Customer Match lists to Google Ads via API.
 ### Google Ads setup
 
 Before running the script, you should create a remarketing list in Google Ads.
-It is recommended to set the membership duration to the N+1, where N is the
+It is recommended to set the membership duration to the N+3, where N is the
 number of days between script runs. This way, the list will be maintained with
 only those users that are in the audience file. If a user is removed from the
 file, it won't be added in the next script run and it will be eventually
-deleted.
+deleted. Matching process may take time; the *+3* is a safeguard period to avoid
+unwanted tempororay removals during this processing time.
 
 ### Set-up
 

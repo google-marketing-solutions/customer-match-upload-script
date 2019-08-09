@@ -20,8 +20,8 @@ unwanted tempororay removals during this processing time.
 
 ### Set-up
 
-First, you must obtain the appropriate credentials so that the script
-can connect to Google Ads API and upload the data. Follow the instructions 
+First, you must obtain the appropriate credentials so that the script can
+connect to Google Ads API and upload the data. Follow the instructions
 [here](https://developers.google.com/adwords/api/docs/guides/authentication#installed)
 to obtain a *Client ID* and *Client secret* for an *Installed App*.
 
@@ -31,8 +31,8 @@ token*:
 python generate_refresh_token.py --client_id YOUR_CLIENT_ID --client_secret
 YOUR_CLIENT_SECRET
 ```
-Where `YOUR_CLIENT_ID` and `YOUR_CLIENT_SECRET` must be substituted
-with the values you obtained previously.
+Where `YOUR_CLIENT_ID` and `YOUR_CLIENT_SECRET` must be substituted with the
+values you obtained previously.
 
 The script will generate a *Refresh token* and print it on screen. Make a copy
 of it as we'll need it later.
@@ -44,6 +44,25 @@ Once you have the *Client ID*, *Client secret*, *Refresh token* and *Developer
 token*, you must add them to the script config file. In order to do so, edit the
 file `googleads_config.yaml` and enter the appropriate values. You'll also need
 the Google Ads *Customer ID*, which you can find in Google Ads UI.
+
+### Input preparation
+
+Your audience file should be named `audience.csv` and must be in CSV format. You
+must specify the fields to upload in the header row. The available fields are:
+
+-   Email
+-   Phone
+-   MobileId
+-   UserId
+-   FirstName
+-   LastName
+-   CountryCode
+-   ZipCode
+-   List
+
+You can use plain text values and the script will hash them before uploading, or
+you can hash them yourself (the desired behaviour is controlled with the
+`IS_DATA_ENCRYPTED` variable in the script).
 
 ### Running the script
 

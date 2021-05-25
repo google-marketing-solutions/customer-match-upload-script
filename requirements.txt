@@ -1,2 +1,1 @@
-oauth2client
-googleads
+google-ads

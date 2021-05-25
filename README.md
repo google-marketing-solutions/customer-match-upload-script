@@ -16,14 +16,14 @@ number of days between script runs. This way, the list will be maintained with
 only those users that are in the audience file. If a user is removed from the
 file, it won't be added in the next script run and it will be eventually
 deleted. Matching process may take time; the *+3* is a safeguard period to avoid
-unwanted tempororay removals during this processing time.
+unwanted temporary removals during this processing time.
 
 ### Set-up
 
 First, you must obtain the appropriate credentials so that the script can
 connect to Google Ads API and upload the data. Follow the instructions
 [here](https://developers.google.com/google-ads/api/docs/oauth/cloud-project#create_a_client_id_and_client_secret)
-to obtain a OAuth 2.0 Client IDs for an *Installed App*. Then, download the
+to obtain OAuth 2.0 Client IDs for an *Installed App*. Then, download the
 client secrets json file to the working directory (this file contains a
 *Client ID* and *Client secret*).
 
@@ -40,7 +40,7 @@ The script will generate a *Refresh token* and print it on screen. Make a copy
 of it as we'll need it later.
 
 Next, get a *Developer token* from Google Ads by following the instructions
-[here](https://developers.google.com/adwords/api/docs/guides/accounts-overview#developer_token)
+[here](https://developers.google.com/google-ads/api/docs/first-call/dev-token).
 
 Once you have the *Client ID*, *Client secret*, *Refresh token* and *Developer
 token*, you must add them to the script config file. In order to do so, edit the
@@ -124,5 +124,5 @@ To check the status of the job periodically, use the following GAQL query with G
         LIMIT 1
 Or you can use the check_job.py script with the following args:
 
- python check_job.py --config_file ./csemcc_config.yaml --customer_id 0000000000 --job_resource_name customers/0000000000/offlineUserDataJobs/9999999 --user_list_resource_name customers/0000000000/userLists/888888888
+python check_job.py --config_file ./csemcc_config.yaml --customer_id 0000000000 --job_resource_name customers/0000000000/offlineUserDataJobs/9999999 --user_list_resource_name customers/0000000000/userLists/888888888
 ```

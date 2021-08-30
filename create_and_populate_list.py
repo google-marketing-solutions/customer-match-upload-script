@@ -176,8 +176,9 @@ def create_user_list(client, customer_id, list_name):
   user_list = user_list_operation.create
   user_list.name = list_name
   user_list.description = ('This is a list of users uploaded using Ads API.')
-  user_list.crm_based_user_list.upload_key_type = client.get_type(
-      'CustomerMatchUploadKeyTypeEnum').CustomerMatchUploadKeyType.CONTACT_INFO
+  user_list.crm_based_user_list.upload_key_type = (
+        client.enums.CustomerMatchUploadKeyTypeEnum.CONTACT_INFO
+    )
 
   user_list.membership_life_span = MEMBERSHIP_LIFESPAN_DAYS
 
@@ -313,7 +314,7 @@ def build_offline_user_data_job_operations(client, customer_data):
         user_identifier.address_info.postal_code = item['postal_code']
       user_data.user_identifiers.append(user_identifier)
 
-    customer_data_operations.append(user_data_operation)
+      customer_data_operations.append(user_data_operation)
 
   return customer_data_operations
 

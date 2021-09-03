@@ -54,17 +54,49 @@ must specify the fields to upload in the header row. The available fields are:
 
 - Email
 - Phone
-- MobileId
-- UserId
 - FirstName
 - LastName
 - CountryCode
 - ZipCode
+- MobileId
+- UserId
 - List
 
 You can use plain text values and the script will hash them before uploading, or
 you can hash them yourself (the desired behaviour is controlled with the
-`IS_DATA_ENCRYPTED` variable in the script).
+`--hash_required` flag in the script).
+
+Currently there are three types of customer lists available:
+
+- *Customers based on email, phone, and/or mailing address uploads* (`CONTACT_INFO`)
+- *Customers based on Mobile Device ID uploads* (`MOBILE_ADVERTISING_ID`)
+- *Customers based on User ID uploads* (`CRM_ID`)
+
+The type of list to upload is controlled using the `list_type`flag
+(the default value is `CONTACT_INFO`)
+
+Each type of list only allows certain fields to be uploaded. You need to take
+that into account while preparing the data. The script will filter those
+fields depending on the `list_type` specified, but if the lists already exists
+and doesn't match the type specified, it will show an error in the upload
+operation.
+
+These are the fields allowed per type:
+
+- `CONTACT_INFO`:
+  - Email
+  - Phone
+  - FirstName
+  - LastName
+  - CountryCode
+  - ZipCode
+  - List
+- `MOBILE_ADVERTISING_ID`:
+  - MobileId
+  - List
+- `CRM_ID`:
+  - UserId
+  - List
 
 ### Running the script
 
@@ -90,6 +122,13 @@ python create_and_populate_list.py --customer_id CUSTOMER_ID --audience_name YOU
 If you don't specify any remarketing list in the audience file, the script will
 create a new audience list with a default name (controlled by the `GENERIC_LIST`
 variable in the script) and will add all the users to that one.
+
+You can also specify the list type by using the `--list_type` flag, and passing
+one of the allowed values: `CONTACT_INFO`, `MOBILE_ADVERTISING_ID`,`CRM_ID`.
+The default if not specified is `CONTACT_INFO`.
+
+The data is not hashed by default. If you need the script to hash the customer
+data, you can use the `--hash_required` flag to enable it.
 
 The script has more optional parameters that allow working with custom
 configuration and audience file paths. For more info on them, run:

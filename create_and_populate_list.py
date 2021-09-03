@@ -27,7 +27,6 @@ import hashlib
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
-
 # CSV Headers (Change if needed)
 HEADER_LINE = True
 EMAIL = 'Email'
@@ -39,31 +38,55 @@ LAST_NAME = 'LastName'
 COUNTRY_CODE = 'CountryCode'
 ZIP_CODE = 'ZipCode'
 LIST_NAME = 'List'
-IS_DATA_ENCRYPTED = False
 
 # Default Values
 GENERIC_LIST = 'Generic List from the API'
-MAX_ITEMS_PER_CALL = 990
 CSV_FILE_PATH = 'audience.csv'
 CONFIG_PATH = './googleads_config.yaml'
 MEMBERSHIP_LIFESPAN_DAYS = 8
 
+# Constants
+CONTACT_INFO = 'CONTACT_INFO'
+MOBILE_ADVERTISING_ID = 'MOBILE_ADVERTISING_ID'
+CRM_ID = 'CRM_ID'
 
-def generate_list_data_base():
+
+def generate_list_data_base(list_type):
+  """Generates an empty customer list data object.
+
+  Args:
+    list_type: The type of customer list (based on CustomerMatchUploadKeyType).
+
+  Returns:
+    data_base: an empty customer list data object.
+  """
   data_base = {}
-  data_base['emails'] = []
-  data_base['phones'] = []
-  data_base['mobile_ids'] = []
-  data_base['user_ids'] = []
-  data_base['addresses'] = []
+  if list_type == CONTACT_INFO:
+    data_base['emails'] = []
+    data_base['phones'] = []
+    data_base['addresses'] = []
+  elif list_type == MOBILE_ADVERTISING_ID:
+    data_base['mobile_ids'] = []
+  elif list_type == CRM_ID:
+    data_base['user_ids'] = []
   return data_base
 
 
-def read_csv(path):
+def is_list_empty(customer_data):
+  if customer_data:
+    for item in customer_data:
+      if customer_data[item]:
+        return False
+  return True
+
+
+def read_csv(path, list_type, hash_required):
   """Reads customer data from CSV and stores it in memory.
 
   Args:
     path: CSV file path.
+    list_type: The type of customer list (based on CustomerMatchUploadKeyType).
+    hash_required: Indicates if the customer data needs to be hashed.
 
   Returns:
     customer_data: Processed data from CSV.
@@ -82,44 +105,48 @@ def read_csv(path):
 
       if row.get(LIST_NAME):
         if not customer_data.get(row[LIST_NAME]):
-          customer_data[row[LIST_NAME]] = generate_list_data_base()
+          customer_data[row[LIST_NAME]] = generate_list_data_base(list_type)
         list_data = customer_data[row[LIST_NAME]]
       else:
         # Use generic list
         if not customer_data.get(GENERIC_LIST):
-          customer_data[GENERIC_LIST] = generate_list_data_base()
+          customer_data[GENERIC_LIST] = generate_list_data_base(list_type)
         list_data = customer_data[GENERIC_LIST]
+      if list_type == CONTACT_INFO:
+        if row.get(EMAIL):
+          if hash_required:
+            list_data['emails'].append(
+                {'hashed_email': normalize_and_sha256(row[EMAIL])})
+          else:
+            list_data['emails'].append({'hashed_email': row[EMAIL]})
 
-      if row.get(EMAIL):
-        if IS_DATA_ENCRYPTED:
-          list_data['emails'].append({'hashed_email': row[EMAIL]})
-        else:
-          list_data['emails'].append(
-              {'hashed_email': normalize_and_sha256(row[EMAIL])})
+        if row.get(PHONE):
+          if hash_required:
+            list_data['phones'].append(
+                {'hashed_phone_number': normalize_and_sha256(row[PHONE])})
+          else:
+            list_data['phones'].append({'hashed_phone_number': row[PHONE]})
 
-      if row.get(PHONE):
-        if IS_DATA_ENCRYPTED:
-          list_data['phones'].append({'hashed_phone_number': row[PHONE]})
-        else:
-          list_data['phones'].append(
-              {'hashed_phone_number': normalize_and_sha256(row[PHONE])})
+        if (row.get(FIRST_NAME) and row.get(LAST_NAME) and
+            row.get(COUNTRY_CODE) and row.get(ZIP_CODE)):
+          address = {}
+          if hash_required:
+            address['hashed_first_name'] = normalize_and_sha256(row[FIRST_NAME])
+            address['hashed_last_name'] = normalize_and_sha256(row[LAST_NAME])
+          else:
+            address['hashed_first_name'] = row[FIRST_NAME]
+            address['hashed_last_name'] = row[LAST_NAME]
+          address['country_code'] = row[COUNTRY_CODE]
+          address['zip_code'] = row[ZIP_CODE]
+          list_data['addresses'].append(address)
 
-      if row.get(MOBILE_ID):
-        list_data['mobile_ids'].append({'mobile_id': row[MOBILE_ID]})
-      if row.get(USER_ID):
-        list_data['user_ids'].append({'third_party_user_id': row[USER_ID]})
-      if (row.get(FIRST_NAME) and row.get(LAST_NAME) and
-          row.get(COUNTRY_CODE) and row.get(ZIP_CODE)):
-        address = {}
-        if IS_DATA_ENCRYPTED:
-          address['hashed_first_name'] = row[FIRST_NAME]
-          address['hashed_last_name'] = row[LAST_NAME]
-        else:
-          address['hashed_first_name'] = normalize_and_sha256(row[FIRST_NAME])
-          address['hashed_last_name'] = normalize_and_sha256(row[LAST_NAME])
-        address['country_code'] = row[COUNTRY_CODE]
-        address['zip_code'] = row[ZIP_CODE]
-        list_data['addresses'].append(address)
+      elif list_type == MOBILE_ADVERTISING_ID:
+        if row.get(MOBILE_ID):
+          list_data['mobile_ids'].append({'mobile_id': row[MOBILE_ID]})
+
+      elif list_type == CRM_ID:
+        if row.get(USER_ID):
+          list_data['user_ids'].append({'third_party_user_id': row[USER_ID]})
       line_count += 1
 
     print(f'Processed {line_count} lines from file {path}.')
@@ -157,13 +184,15 @@ def get_user_list_resource_name(client, customer_id, list_name):
   return user_list_resource_name
 
 
-def create_user_list(client, customer_id, list_name):
+def create_user_list(client, customer_id, list_name, list_type, app_id=None):
   """Creates a User List using the name provided.
 
   Args:
     client: The Google Ads client instance.
     customer_id: The customer ID for which to add the user list.
     list_name: The name of the user list to search.
+    list_type: The type of customer list (based on CustomerMatchUploadKeyType).
+    app_id: App ID required only for mobile advertising lists.
 
   Returns:
     The User List resource name.
@@ -176,9 +205,9 @@ def create_user_list(client, customer_id, list_name):
   user_list = user_list_operation.create
   user_list.name = list_name
   user_list.description = ('This is a list of users uploaded using Ads API.')
-  user_list.crm_based_user_list.upload_key_type = (
-        client.enums.CustomerMatchUploadKeyTypeEnum.CONTACT_INFO
-    )
+  user_list.crm_based_user_list.upload_key_type = (list_type)
+  if list_type == MOBILE_ADVERTISING_ID:
+    user_list.crm_based_user_list.app_id = app_id
 
   user_list.membership_life_span = MEMBERSHIP_LIFESPAN_DAYS
 
@@ -246,7 +275,7 @@ def add_users_to_customer_match_user_list(client, customer_id,
       # Retrieve the class definition of the GoogleAdsFailure instance
       # in order to use the "deserialize" class method to parse the
       # error_detail string into a protobuf message object.
-      failure_object = type(failure_message).deserialize(error_detail)
+      failure_object = type(failure_message).deserialize(error_detail.value)
 
       for error in failure_object.errors:
         print('A partial failure at index '
@@ -406,15 +435,23 @@ def print_customer_match_user_list_info(client, customer_id,
         'populated. Estimates of size zero are possible.')
 
 
-def upload_data(client, customer_id, list_name, customer_data, skip_polling):
+def upload_data(client,
+                customer_id,
+                list_name,
+                list_type,
+                customer_data,
+                skip_polling,
+                app_id=None):
   """Uploads processed data to the specified list and creates it if necessary.
 
   Args:
     client: The Google Ads client.
     customer_id: The customer ID for which to add the user list.
     list_name: The name of the user list to modify.
+    list_type: The type of customer list (based on CustomerMatchUploadKeyType).
     customer_data: Processed customer data to be uploaded.
     skip_polling: A bool dictating whether to poll the API for completion.
+    app_id: App ID required only for mobile advertising lists.
 
   Returns:
     None.
@@ -425,8 +462,10 @@ def upload_data(client, customer_id, list_name, customer_data, skip_polling):
 
   if not user_list_resource_name:
     # Create missing user list
-    user_list_resource_name = create_user_list(client, customer_id, list_name)
+    user_list_resource_name = create_user_list(client, customer_id, list_name,
+                                               list_type, app_id)
 
+  print(f'Uploading data for list \'{list_name}\'')
   add_users_to_customer_match_user_list(client, customer_id,
                                         user_list_resource_name, customer_data,
                                         skip_polling)
@@ -460,20 +499,41 @@ if __name__ == '__main__':
       default=CSV_FILE_PATH,
       help='CSV file with audience list.')
   parser.add_argument(
+      '--list_type',
+      default=CONTACT_INFO,
+      choices=[CONTACT_INFO, MOBILE_ADVERTISING_ID, CRM_ID],
+      help='Customer match upload key types. Default value: CONTACT_INFO')
+  parser.add_argument(
+      '--app_id',
+      required=False,
+      default=None,
+      help=('App ID to associate with the list. Only required for '
+            'Mobile Advertising Lists.'))
+  parser.add_argument(
+      '--hash_required',
+      action='store_true',
+      default=False,
+      help='Indicates that the customer data needs to be hashed.')
+  parser.add_argument(
       '--wait',
+      action='store_true',
       default=False,
       help='Wait for the jobs to finish (each job will be blocking).')
   args = parser.parse_args()
 
-  data = read_csv(args.audience_file)
+  data = read_csv(args.audience_file, args.list_type, args.hash_required)
 
   google_ads_client = GoogleAdsClient.load_from_storage(args.config_file)
 
   for name in data:
     print(f'Processing data for list \'{name}\'.')
     try:
-      upload_data(google_ads_client, args.customer_id, name, data[name],
-                  not args.wait)
+      if not is_list_empty(data[name]):
+        upload_data(google_ads_client, args.customer_id, name, args.list_type,
+                    data[name], not args.wait, args.app_id)
+      else:
+        print(f'The list \'{name}\' will be skipped as no compatible data '
+              'has been found.')
     except GoogleAdsException as ex:
       print(f'Request with ID "{ex.request_id}" failed with status '
             f'"{ex.error.code().name}" and includes the following errors:')

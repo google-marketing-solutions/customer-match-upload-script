@@ -21,17 +21,33 @@ It is intended to be run from the command line and requires user input.
 """
 
 import argparse
+import json
+import re
 
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow
 
 SCOPE = 'https://www.googleapis.com/auth/adwords'
 
 
 def main(client_secrets_path, scopes):
-  flow = InstalledAppFlow.from_client_secrets_file(
-      client_secrets_path, scopes=scopes)
+  with open(client_secrets_path) as client_secrets_file:
+      client_secrets = json.load(client_secrets_file)
+      redirect_uri = client_secrets['installed']['redirect_uris'][0]
+  flow = Flow.from_client_secrets_file(
+      client_secrets_path, scopes=scopes, redirect_uri=redirect_uri)
+  print('Please open this URL in your browser and follow the prompts to '
+        'authorize this script: '
+        f'{flow.authorization_url()[0]}')
+  print(f"""
+If there is no local web server serving at {redirect_uri}, the \
+succeeded OAuth flow will land the browser on an error page ("This site \
+can't be reached"). This is an expected behavior. Copy the whole URL and \
+continue.
+  """)
+  url = input('Copy the complete url from browser and paste it here: ')
+  code = re.sub(r'&.*$','', re.sub(r'^.*code=', '', url))
 
-  flow.run_console()
+  flow.fetch_token(code=code)
 
   print('Access token: %s' % flow.credentials.token)
   print('Refresh token: %s' % flow.credentials.refresh_token)
@@ -64,3 +80,4 @@ if __name__ == '__main__':
     configured_scopes.extend(args.additional_scopes.replace(' ', '').split(','))
 
   main(args.client_secrets_path, configured_scopes)
+

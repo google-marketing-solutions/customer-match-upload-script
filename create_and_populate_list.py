@@ -26,6 +26,9 @@ import hashlib
 
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
+from google.ads.googleads.v10.enums.types import customer_match_upload_key_type
+from google.ads.googleads.v10.enums.types import offline_user_data_job_status
+from google.ads.googleads.v10.enums.types import offline_user_data_job_type
 
 # CSV Headers (Change if needed)
 HEADER_LINE = True
@@ -205,7 +208,8 @@ def create_user_list(client, customer_id, list_name, list_type, app_id=None):
   user_list = user_list_operation.create
   user_list.name = list_name
   user_list.description = ('This is a list of users uploaded using Ads API.')
-  user_list.crm_based_user_list.upload_key_type = (list_type)
+  user_list.crm_based_user_list.upload_key_type = (
+      customer_match_upload_key_type.CustomerMatchUploadKeyTypeEnum.CustomerMatchUploadKeyType[list_type])
   if list_type == MOBILE_ADVERTISING_ID:
     user_list.crm_based_user_list.app_id = app_id
 
@@ -254,8 +258,8 @@ def add_users_to_customer_match_user_list(client, customer_id,
 
   request = client.get_type('AddOfflineUserDataJobOperationsRequest')
   request.resource_name = offline_user_data_job_resource_name
-  request.operations = build_offline_user_data_job_operations(
-      client, customer_data)
+  request.operations.extend(build_offline_user_data_job_operations(
+      client, customer_data))
   request.enable_partial_failure = True
 
   # Issues a request to add the operations to the offline user data job.
@@ -380,10 +384,13 @@ def check_job_status(
   google_ads_service = client.get_service('GoogleAdsService')
   results = google_ads_service.search(customer_id=customer_id, query=query)
   offline_user_data_job = next(iter(results)).offline_user_data_job
-  status_name = offline_user_data_job.status.name
+  job_type_enum = offline_user_data_job_type.OfflineUserDataJobTypeEnum.OfflineUserDataJobType(
+      offline_user_data_job.type_)
+  status_name_enum = offline_user_data_job_status.OfflineUserDataJobStatusEnum.OfflineUserDataJobStatus(
+      offline_user_data_job.status)
 
   print(f'Offline user data job ID \'{offline_user_data_job.id}\' with type '
-        f'\'{offline_user_data_job.type_.name}\' has status: {status_name}')
+        f'\'{job_type_enum.name}\' has status: {status_name_enum.name}')
 
   if status_name == 'SUCCESS':
     print_customer_match_user_list_info(client, customer_id,

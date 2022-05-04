@@ -392,12 +392,12 @@ def check_job_status(
   print(f'Offline user data job ID \'{offline_user_data_job.id}\' with type '
         f'\'{job_type_enum.name}\' has status: {status_name_enum.name}')
 
-  if status_name == 'SUCCESS':
+  if status_name_enum.name == 'SUCCESS':
     print_customer_match_user_list_info(client, customer_id,
                                         user_list_resource_name)
-  elif status_name == 'FAILED':
+  elif status_name_enum.name == 'FAILED':
     print(f'\tFailure Reason: {offline_user_data_job.failure_reason}')
-  elif status_name in ('PENDING', 'RUNNING'):
+  elif status_name_enum.name in ('PENDING', 'RUNNING'):
     print('To check the status of the job periodically, use the following '
           f'GAQL query with GoogleAdsService.Search: {query}')
     print('Or you can use the check_job.py script with the following args:')

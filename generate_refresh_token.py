@@ -44,7 +44,7 @@ succeeded OAuth flow will land the browser on an error page ("This site \
 can't be reached"). This is an expected behavior. Copy the whole URL and \
 continue.
   """)
-  url = input('Copy the complete url from browser and paste it here: ')
+  url = input('Copy the code (or the complete url if no code is shown) from the browser and paste it here: ')
   code = re.sub(r'&.*$','', re.sub(r'^.*code=', '', url))
 
   flow.fetch_token(code=code)
